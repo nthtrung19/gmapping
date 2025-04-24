@@ -1,0 +1,26 @@
+<launch>
+  <!-- Dùng map đã lưu -->
+  <arg name="map_file" default="$(find xe_robot1)/maps/my_map.yaml"/>
+
+  <!-- Load map -->
+  <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)" />
+
+  <!-- TF robot -->
+  <param name="robot_description" command="$(find xacro)/xacro '$(find xe_robot1)/urdf/xe_robot1.urdf'" />
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"/>
+  <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" />
+
+  <!-- Static transform base_footprint -> base_link -->
+  <node name="tf_footprint_base" pkg="tf" type="static_transform_publisher"
+        args="0 0 0 0 0 0 base_link base_footprint 40" />
+
+  <!-- AMCL localization -->
+  <node name="amcl" pkg="amcl" type="amcl" output="screen">
+    <param name="odom_frame_id" value="odom"/>
+    <param name="base_frame_id" value="base_link"/>
+    <param name="scan_topic" value="scan"/>
+  </node>
+
+  <!-- Move base -->
+  <include file="$(find move_base)/launch/move_base.launch" />
+</launch>
