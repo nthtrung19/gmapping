@@ -1,0 +1,65 @@
+<launch>
+  <!-- Dùng thời gian mô phỏng từ Gazebo -->
+  <param name="use_sim_time" value="true" />
+
+  <!-- Load URDF -->
+  <param name="robot_description" command="$(find xacro)/xacro '$(find xe_robot1)/urdf/xe_robot1.urdf'" />
+  
+  <!-- TF và joint state -->
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"/>
+  <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher"/>
+
+  <!-- Static TF base_footprint -> base_link -->
+  <node name="tf_footprint_base" pkg="tf" type="static_transform_publisher"
+        args="0 0 0 0 0 0 base_link base_footprint 40" />
+
+  <!-- Gmapping SLAM -->
+  <node pkg="gmapping" type="slam_gmapping" name="slam_gmapping" output="screen">
+    <param name="odom_frame" value="odom"/>
+    <param name="base_frame" value="base_link"/>
+    <param name="map_update_interval" value="3.0"/>
+    <param name="maxUrange" value="8.0"/>
+    <param name="sigma" value="0.05"/>
+    <param name="kernelSize" value="1"/>
+    <param name="lstep" value="0.05"/>
+    <param name="astep" value="0.05"/>
+    <param name="iterations" value="5"/>
+    <param name="lsigma" value="0.075"/>
+    <param name="ogain" value="3.0"/>
+    <param name="lskip" value="0"/>
+    <param name="minimumScore" value="50"/>
+  </node>
+
+  <!-- Move Base -->
+  <node pkg="move_base" type="move_base" name="move_base" output="screen">
+    <rosparam file="$(find xe_robot1)/config/move_base/costmap_common_params.yaml" command="load" />
+    <rosparam file="$(find xe_robot1)/config/move_base/global_costmap_params.yaml" command="load" />
+    <rosparam file="$(find xe_robot1)/config/move_base/local_costmap_params.yaml" command="load" />
+    <rosparam file="$(find xe_robot1)/config/move_base/dwa_planner_params.yaml" command="load" />
+
+    <param name="base_global_planner" value="navfn/NavfnROS" />
+    <param name="base_local_planner" value="dwa_local_planner/DWAPlannerROS" />
+    <param name="planner_frequency" value="2.0"/>
+    <param name="controller_frequency" value="5.0"/>
+    <param name="planner_patience" value="5.0"/>
+    <param name="controller_patience" value="5.0"/>
+    <param name="recovery_behavior_enabled" value="true"/>
+  </node>
+
+  <!-- explore_lite AUTONOMOUS -->
+  <node name="explore" pkg="explore_lite" type="explore" output="screen">
+    <!-- Remap costmap -->
+    <remap from="costmap" to="/move_base/global_costmap/costmap"/>
+    
+    <!-- Tham số cấu hình -->
+    <param name="planner_frequency" value="1.0"/>
+    <param name="progress_timeout" value="300.0"/>
+    <param name="potential_scale" value="1.0"/>
+    <param name="gain_scale" value="5.0"/>
+    <param name="frontier_resolution" value="0.5"/>
+    <param name="visualize" value="true"/>
+  </node>
+
+  <!-- RViz -->
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find xe_robot1)/rviz/view_display.rviz" />
+</launch>
